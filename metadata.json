@@ -1,0 +1,5 @@
+{
+  "name": "INCOSE Requirement Analyst Agent",
+  "description": "A professional AI agent for analyzing system requirements based on INCOSE guidelines, featuring ontology visualization and multi-model support.",
+  "requestFramePermissions": []
+}
