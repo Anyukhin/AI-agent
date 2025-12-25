@@ -1,10 +1,10 @@
-import { INCOSE_DATA } from '../constants';
 
-// Helper to get access token from GigaChat OAuth
+import { INCOSE_DATA } from '../constants';
+import { ChatMessage } from '../types';
+
 const getAccessToken = async (authKey: string, proxyUrl: string): Promise<string> => {
   const uuid = crypto.randomUUID();
   const targetUrl = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth";
-  // FIX: Do not encode target URL for corsproxy.io
   const url = proxyUrl ? `${proxyUrl}${targetUrl}` : targetUrl;
 
   try {
@@ -26,10 +26,6 @@ const getAccessToken = async (authKey: string, proxyUrl: string): Promise<string
     const data = await response.json();
     return data.access_token;
   } catch (error: any) {
-    console.error("GigaChat Auth Error:", error);
-    if (error.message === "Failed to fetch") {
-       throw new Error("Network Error: Failed to connect to GigaChat OAuth. Check CORS Proxy settings.");
-    }
     throw new Error(`Failed to authenticate with GigaChat: ${error.message}`);
   }
 };
@@ -37,13 +33,12 @@ const getAccessToken = async (authKey: string, proxyUrl: string): Promise<string
 export const analyzeRequirementsWithGigaChat = async (
   apiKey: string,
   modelName: string,
-  requirements: string,
+  history: ChatMessage[],
   systemPromptTemplate: string,
   proxyUrl: string = ''
 ): Promise<string> => {
   if (!apiKey) throw new Error("GigaChat API Key is missing");
 
-  // Flatten the ontology data into text context
   const ontologyContext = INCOSE_DATA.nodes
     .map(n => `${n.label}: ${n.definition}`)
     .join('\n');
@@ -51,12 +46,8 @@ export const analyzeRequirementsWithGigaChat = async (
   const systemPrompt = systemPromptTemplate.replace('{ontology_context}', ontologyContext);
 
   try {
-    // 1. Get Access Token (assuming apiKey is the Base64 Authorization string)
     const accessToken = await getAccessToken(apiKey, proxyUrl);
-
-    // 2. Call Chat Completion
     const targetUrl = "https://gigachat.devices.sberbank.ru/api/v1/chat/completions";
-    // FIX: Do not encode target URL for corsproxy.io
     const url = proxyUrl ? `${proxyUrl}${targetUrl}` : targetUrl;
 
     const response = await fetch(url, {
@@ -68,14 +59,8 @@ export const analyzeRequirementsWithGigaChat = async (
       body: JSON.stringify({
         model: modelName,
         messages: [
-          {
-            role: "system",
-            content: systemPrompt
-          },
-          {
-            role: "user",
-            content: requirements
-          }
+          { role: "system", content: systemPrompt },
+          ...history.map(msg => ({ role: msg.role, content: msg.content }))
         ],
         temperature: 0.2,
       })
@@ -88,12 +73,7 @@ export const analyzeRequirementsWithGigaChat = async (
 
     const data = await response.json();
     return data.choices?.[0]?.message?.content || "No response generated.";
-
   } catch (error: any) {
-    console.error("GigaChat Service Error:", error);
-    if (error.message === "Failed to fetch") {
-       throw new Error("Network Error: Failed to connect to GigaChat API. Check CORS Proxy settings.");
-    }
     throw new Error(error.message || "Failed to analyze requirements with GigaChat");
   }
 };

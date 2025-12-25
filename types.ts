@@ -8,6 +8,12 @@ export enum GigaChatModel {
   GigaChatMax = 'GigaChatMax'
 }
 
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: number;
+}
+
 export interface TtlFile {
   id: string;
   name: string;
@@ -52,8 +58,7 @@ export interface ApiKeys {
 export interface ChatSession {
   id: string;
   name: string;
-  input: string;
-  result: string | null;
+  messages: ChatMessage[];
   promptId: string;
   provider: ApiProvider;
   model: string;

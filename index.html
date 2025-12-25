@@ -26,6 +26,25 @@
       ::-webkit-scrollbar-thumb:hover {
         background: #94a3b8; 
       }
+
+      /* Force table text to be black in markdown output and make it smaller */
+      .prose table {
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 8px;
+        font-size: 0.85em; /* Smaller font for tables */
+        line-height: 1.4;
+      }
+      
+      .prose table th, 
+      .prose table td {
+        color: #000000 !important;
+        padding: 6px 10px !important; /* More compact padding */
+      }
+
+      .prose table th {
+        font-weight: 700;
+        background-color: rgba(0, 0, 0, 0.05);
+      }
     </style>
   <script type="importmap">
 {

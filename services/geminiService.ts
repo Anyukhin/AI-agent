@@ -1,37 +1,42 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { INCOSE_DATA } from '../constants';
+import { ChatMessage } from '../types';
 
 /**
- * Analyzes requirements using Google Gemini API.
- * Follows the latest @google/genai SDK patterns.
+ * Analyzes requirements using Google Gemini API with conversation history.
  */
 export const analyzeRequirementsWithGemini = async (
   modelName: string,
-  requirements: string,
+  history: ChatMessage[],
   systemPromptTemplate: string
 ): Promise<string> => {
-  // Flatten the ontology data into text context
   const ontologyContext = INCOSE_DATA.nodes
     .map(n => `${n.label}: ${n.definition}`)
     .join('\n');
 
   const systemPrompt = systemPromptTemplate.replace('{ontology_context}', ontologyContext);
 
-  // Initialize with named parameter object as per guidelines.
-  // Using process.env.API_KEY directly is a requirement.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+  // Use process.env.API_KEY directly and use named parameter for apiKey.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
+  // Map our history to Gemini format (user/model)
+  const contents = history.map(msg => ({
+    role: msg.role === 'user' ? 'user' : 'model',
+    parts: [{ text: msg.content }]
+  }));
+
   try {
     const response = await ai.models.generateContent({
       model: modelName,
-      contents: requirements,
+      contents: contents,
       config: {
         systemInstruction: systemPrompt,
         temperature: 0.2,
       },
     });
 
-    // Extract text output from GenerateContentResponse as a property access.
+    // Extract text output using the .text property as per guidelines.
     return response.text || "No response generated.";
   } catch (error: any) {
     console.error("Gemini API Error:", error);
